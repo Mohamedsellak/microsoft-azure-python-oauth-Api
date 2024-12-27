@@ -1,0 +1,15 @@
+{
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users(displayName,mail,userPrincipalName,id,accountEnabled)",
+    "value": [
+        {
+            "displayName": "Mohammed sellak",
+            "mail": null,
+            "userPrincipalName": "Mohamed._.sellak_hotmail.com#EXT#@Mohamedsellakhotmail.onmicrosoft.com",
+            "id": "c8cc2851-4f09-4b55-bee9-cd870cf761d4",
+            "accountEnabled": true,
+            "roles": [
+                "Global Administrator"
+            ]
+        }
+    ]
+}
