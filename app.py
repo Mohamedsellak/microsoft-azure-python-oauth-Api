@@ -1,12 +1,13 @@
 import identity.web
 import requests
 import json
-from flask import Flask, redirect, render_template, request, session, url_for, send_file
+from flask import Flask, redirect, render_template, request, session, url_for, send_file, jsonify
 from flask_session import Session
 import os
 from datetime import datetime
 
 import app_config
+from token_script import save_token  # Import the save_token function
 
 __version__ = "0.8.0"  # The version of this sample, for troubleshooting purpose
 
@@ -30,6 +31,14 @@ auth = identity.web.Auth(
     client_credential=app.config["CLIENT_SECRET"],
 )
 
+@app.route("/get_client_token")
+def get_client_token():
+    """Endpoint to get a new token using client credentials"""
+    token = auth.get_token_for_client(app_config.SCOPE)
+    if "access_token" in token:
+        save_token(token["access_token"])
+        return jsonify({"status": "success", "message": "Token saved successfully"})
+    return jsonify({"status": "error", "message": "Could not get token"}), 400
 
 @app.route("/login")
 def login():
@@ -39,19 +48,23 @@ def login():
         prompt="select_account",  # Optional. More values defined in  https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
         ))
 
-
 @app.route(app_config.REDIRECT_PATH)
 def auth_response():
     result = auth.complete_log_in(request.args)
     if "error" in result:
         return render_template("auth_error.html", result=result)
+    
+    # Get and save token after successful login
+    token = auth.get_token_for_user(app_config.SCOPE)
+    if "access_token" in token:
+        save_token(token["access_token"])
+        print("Token saved successfully!")
+    
     return redirect(url_for("index"))
-
 
 @app.route("/logout")
 def logout():
     return redirect(auth.log_out(url_for("index", _external=True)))
-
 
 @app.route("/")
 def index():
@@ -62,7 +75,6 @@ def index():
     if not auth.get_user():
         return redirect(url_for("login"))
     return render_template('index.html', user=auth.get_user(), version=__version__)
-
 
 @app.route("/call_downstream_api")
 def call_downstream_api():
@@ -76,7 +88,6 @@ def call_downstream_api():
         timeout=30,
     ).json()
     return render_template('display.html', result=api_result)
-
 
 @app.route("/get_all_users")
 def get_all_users():
@@ -152,7 +163,6 @@ def get_all_users():
                 "error_description": str(e)
             })
 
-
 @app.route("/export_users")
 def export_users():
     if 'users_data' not in session:
@@ -177,7 +187,6 @@ def export_users():
         as_attachment=True,
         download_name=f'users_export_{timestamp}.json'
     )
-
 
 @app.route("/export_emails")
 def export_emails():
@@ -245,7 +254,6 @@ def export_emails():
                 "error": "API Error",
                 "error_description": str(e)
             })
-
 
 if __name__ == "__main__":
     app.run()
